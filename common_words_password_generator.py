@@ -1,4 +1,5 @@
 import random
+import functools
 
 
 class CommonWordsPasswordGenerator:
@@ -23,14 +24,18 @@ class CommonWordsPasswordGenerator:
         else:
             self.capitalize = capitalize
 
+        word_list = {}
         with open('wordlist', 'r') as f:
-            self.word_list = set(f.read().split('\n'))
+            raw_word_list = f.read().split('\n')
+        # `words` is a mapping from length to a set of words
+        # with that length
+        for word in raw_word_list:
+            word_list.setdefault(len(word), set()).add(word)
+        self.word_list = {k: frozenset(v) for k, v in word_list.items()}
 
     def generate_password(self):
-        reduced_word_list = set()
-        for word in self.word_list:
-            if len(word) >= self.min_len:
-                reduced_word_list.add(word)
+        # Take the union of words with length >= min_len
+        reduced_word_list = functools.reduce(frozenset.union, (v for k, v in self.word_list.items() if k >= self.min_len))
         password_words = random.sample(reduced_word_list, self.words)
         if self.capitalize:
             password_words = [s.capitalize() for s in password_words]
